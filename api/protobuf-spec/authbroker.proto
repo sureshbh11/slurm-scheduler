@@ -1,0 +1,127 @@
+// Copyright 2020 Hewlett Packard Enterprise Development LP
+
+//protoc authbroker.proto --go_out=plugins=grpc:./
+// mockgen -source=./api/v1.pb.go  -self_package=github.com/hpe-hcss/mlops/internal/pkg/authz-broker/mock -destination=./mock/mockauthz.go -package=mock
+syntax = "proto3";
+
+package api;
+option go_package = ".;api";
+
+// Define the ApplianceService service.
+service ApplianceService{
+  // AddSAMLAppAssignments used to add resource for app assignment
+  rpc AddSAMLAppAssignments(AppAssignerRequest)  returns (EmptyReply) {}
+
+  // AddSAMLClaimMappings add saml claim mappings
+  rpc AddSAMLClaimMappings(AppSAMLClaimMappings) returns (EmptyReply) {}
+
+  // RemoveSAMLAppAssignments used to remove resource for app assignment
+  rpc RemoveSAMLAppAssignments(AppAssignerRequest)  returns (EmptyReply) {}
+
+ // RemoveSAMLClaimMappings remove saml claim mappings
+  rpc RemoveSAMLClaimMappings(AppSAMLClaimMappings) returns (EmptyReply) {}
+
+  // CreateAppliance creates SAML application
+  rpc CreateAppliance(Appliance) returns (Appliance) {}
+
+  // GetAppliance get SAML application
+  rpc GetAppliance(Appliance) returns (Appliance) {}
+
+  // ListAppliances lists  application
+  rpc ListAppliances(Tenant) returns (Appliances) {}
+
+  // DeleteAppliance deletes application
+  rpc DeleteAppliance(Appliance)  returns (EmptyReply) {}
+
+  // RegisterAuthBroker registers Authbroker and MlOps Roles for the given Tenant
+  rpc RegisterAuthBroker(AuthBrokerRequest) returns (EmptyReply) {}
+
+  // DeRegisterAuthBroker unregisters Authbroker and MlOps Roles for the given Tenant
+  rpc DeRegisterAuthBroker(AuthBrokerRequest) returns (EmptyReply) {}
+
+  // ConfigureAuthInHcp configures SAML/LDAP in HCP
+  rpc ConfigureAuthInHcp(AuthConfigRequest) returns (EmptyReply) {}
+
+  // RemoveSiteAdminClaimInHCP removes Siteadmin Claim in HCP
+  rpc RemoveSiteAdminClaimInHCP(AuthConfigRequest) returns (EmptyReply) {}
+}
+
+message AuthBrokerRequest {
+    // tenant id
+    string tenant_id = 1;
+}
+ 
+message Appliance {
+    // tenant id
+    string tenant_id = 1;
+    // appliance on which assignment is needed.
+    string appliance_name = 2;
+    // appliance sso url.
+    string sso_app_url = 3;
+    // appliance id
+    string appliance_id = 4;
+    // site id
+    string site_id = 5;
+}
+
+message Appliances{
+    // list of appliances
+    repeated Appliance appliance = 1;
+}
+
+message Tenant {
+    // tenant id
+    string tenant_id = 1;
+}
+
+message AppAssignerRequest {
+    // tenant id
+    string tenant_id = 1;
+    // appliance on which assignment is needed.
+    string appliance_id = 2;
+    // type of resource which need to assign on appliance
+    string resource_type = 3;
+    // id of resource which need to assign on appliance
+    string resource_id = 4;
+}
+
+message AppSAMLClaimMappings {
+    // tenant id
+    string tenant_id = 1;
+    // appliance on which assignment is needed.
+    string appliance_id = 2;
+    // type of resource which need to assign on appliance
+    string resource_type = 3;
+    // id of resource which need to assign on appliance
+    string resource_id = 4;
+}
+
+message AuthConfigRequest {
+    // tenant id
+    string tenant_id = 1;
+    // appliance on which assignment is needed.
+    string appliance_endpoint = 2;
+    // appliance id
+    string appliance_id = 3;
+    // LDAP config details
+    LDAPConfigRequest ldap_config = 4;
+    // enable_local_user
+    bool enable_local_user = 5;
+}
+
+message LDAPConfigRequest {
+    // ipaddress of ldap proxy
+    string host = 1;
+    // port of ldap proxy
+    string port = 2;
+    // base dn details of ldap proxy
+    string base_dn = 3;
+    // bind dn details of ldap proxy
+    string bind_dn = 4;
+    // bind pwd details of ldap proxy
+    string bind_pwd = 5;
+}
+
+message EmptyReply {
+}
+

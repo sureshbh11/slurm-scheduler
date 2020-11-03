@@ -1,0 +1,7 @@
+# (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/helm-template-generator:v3.2.6
+
+COPY helm /helm
+ARG TAG
+ENV TAG=$TAG

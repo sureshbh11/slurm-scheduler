@@ -1,0 +1,11 @@
+    client:
+      serviceName: hpe-hpcaas
+      serviceSpace: _hpe-hpcaas
+    aws: 
+      secrets:
+        namespace: scm-dev
+    hpe:
+      identity:
+        url: https://iam.intg.hpedevops.net
+      scm:
+        url: https://iam.intg.hpedevops.net

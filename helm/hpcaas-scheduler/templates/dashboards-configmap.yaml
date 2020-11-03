@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glhc-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  sample-dashboard.json: |-
+{{ .Files.Get "dashboards/sample-dashboard.json" | indent 4 }}

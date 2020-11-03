@@ -1,0 +1,14 @@
+*.md
+*.yml
+*.yaml
+*.json
+go.mod
+go.sum
+.gitignore
+etc/*
+.dockerignore
+.dockleignore
+Dockerfile.circleci
+Dockerfile
+CODEOWNERS
+*_mock.go

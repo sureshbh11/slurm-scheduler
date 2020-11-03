@@ -1,0 +1,45 @@
+# (C) Copyright 2019 Hewlett Packard Enterprise Development LP
+image:
+  repository: hpe-hcss/hpcaas-job-scheduler
+  tag: latest # will be replaced
+  pullPolicy: Always
+  registry: 657273346644.dkr.ecr.us-east-1.amazonaws.com
+resources:
+# TODO: run this through panormos/ncs-resource-guesstimator
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+scale:
+  min: 2
+  max: 5
+  targetCPU: 60
+scm:
+  secretname: hpcaas-job-scheduler-scm-aws
+  iamurl: https://iam.intg.hpedevops.net
+  iamgrpc: https://iam.intg.hpedevops.net
+  scmurl: https://iam.intg.hpedevops.net
+  scmgrpc: https://iam.intg.hpedevops.net
+  namespace: scm-dev
+  client:
+    servicename: hpe-hpcaas
+    servicespace: _hpe-hpcaas
+service:
+  name: hpcaas-job-scheduler
+  internalPort: 8080
+  externalPort: 80
+  grpcPort: 8081
+  metricsPort: 2525
+  healthPath: /healthz
+  liveness:
+    initialDelay: 5
+    period: 10
+    threshold: 2
+  readiness:
+    initialDelay: 5
+    period: 10
+    threshold: 2
+  fqdn: hpcaas.dev.hpehcss.net
+  certSecret: istio.default

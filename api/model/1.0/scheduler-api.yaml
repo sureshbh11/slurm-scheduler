@@ -1,0 +1,93 @@
+# (c) Copyright 2020 Hewlett Packard Enterprise Development LP
+openapi: 3.0.2
+
+info:
+  title: Job Scheduler API
+  description: >-
+    API that is Job Scheduler specific and used by the GreenLake Central widgets to provide app submit jobs for scheduling.
+    The caller is expected to use a valid Redstone IAM account and the endpoints documented here will do Roll Based Access Control
+    against the Scheduler api permissions.
+  contact:
+    name: Venkat Sundaram
+    email: ts.venkat@hpe.com
+  version: "1.0"
+
+security:
+  - Bearer: []
+
+servers:
+  - url: https://localhost:9009
+
+paths:
+  /jobs/1.0:
+    get:
+      summary: |
+        Gets the list of jobs.
+      description: Get Job List
+      responses:
+        '200':
+          description: list of jobs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListJobs'
+        '400':
+          description: bad request. some required information was not provided or the request could not be completed
+        '401':
+          description: Unauthorized access. Missing or invalid access token in the Authorization Header.
+
+  /job/{jobNumber}/1.0:
+    get:
+      summary: Details about a job
+      description: Details about a job like status, etc
+        Requires permission scheduler.site.read
+      parameters:
+      - in: path
+        name: jobNumber
+        description: The number or id associated with the job
+        schema:
+          type: string
+          format: string
+          example: Default
+        required: true
+
+      responses:
+        "200":
+          description: Job Info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        "404":
+          description: not found
+        "500":
+          description: internal error
+        '401':
+          description: Unauthorized.
+        '403':
+          description: Forbidden.
+
+components:
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header
+  schemas:
+    ListJobs:
+      type: array
+      description: List of Jobs
+      items:
+        $ref: '#/components/schemas/Job'
+    Job:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the Job
+          example: Site1
+        id:
+          type: string
+          description: Job Number
+          example: 72457646
+

@@ -1,0 +1,29 @@
+#
+# (c) Copyright 2019-2020 Hewlett Packard Enterprise Development LP
+#
+# Confidential computer software. Valid license from HPE required for
+# possession, use or copying. Consistent with FAR 12.211 and 12.212,
+# Commercial Computer Software, Computer Software Documentation, and
+# Technical Data for Commercial Items are licensed to the U.S. Government
+# under vendor's standard commercial license.
+#
+
+# This file mirrors all docker images in .circleci/config.yml so dependabot can make version update PRs
+# Ensure the images in .circleci/config.yml match dependabot updates of this file
+# CI will fail if .circleci/config.yml images are out of date.
+#
+# Update this file using the hpe-css/circleci-dependabot image:
+#       IMG=$(grep 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/circleci-dependabot .circleci/config.yml | sed -e 's/^.* //')
+#       docker run --rm --net=none -v $(pwd):$(pwd) --workdir $(pwd) $IMG
+#
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/circleci-dependabot:v1.0.7
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/cluster-gen:v2.8.3
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/containerize:v1.2.3
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/copyright-tool:0.3.0
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/go-build:v0.1.5
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/helm-template-generator:v3.2.6
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/secrets-scanner:v0.3.3
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/sonar-scanner:v0.2.4
+FROM 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/yamllint:v0.1.0
+FROM 657273346644.dkr.ecr.us-west-2.amazonaws.com/mirror/alpine/helm:3.3.4
+FROM 657273346644.dkr.ecr.us-west-2.amazonaws.com/mirror/cimg/base:2020.10

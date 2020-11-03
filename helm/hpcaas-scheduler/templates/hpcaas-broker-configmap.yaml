@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "name" . }}-config
+  labels:
+    app: {{ template "name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  SCM_CONFIG_PATH: /opt/hpcaas-job-scheduler/scmClientConfig.yaml
+  IAMURL: {{ .Values.scm.iamurl }}
+  IAMGRPC: {{ .Values.scm.iamgrpc }}
+  SCM_AWS_REGION: us-west-2
+  HPCaas_AB_PORT: {{ .Values.service.internalPort | quote }}
+  HPCaas_AB_GRPC_PORT: {{ .Values.service.grpcPort | quote }}

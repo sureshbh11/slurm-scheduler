@@ -1,0 +1,8 @@
+# (C) Copyright 2019 Hewlett Packard Enterprise Development LP
+apiVersion: v1
+description: A template for a go service
+name: hpcaas-job-scheduler
+version: 0.0.1-dev #will be replaced
+sources:
+  - https://github.com/hpe-hcss/hpcaas-job-scheduler
+icon: https://www.hpe.com/content/dam/hpe/global/base/imageOnly/HPE_log_left_wht.png

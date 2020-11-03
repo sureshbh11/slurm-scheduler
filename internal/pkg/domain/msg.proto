@@ -1,0 +1,12 @@
+syntax = "proto3";
+package stub;
+option go_package = "github.com/hpe-hcss/dummy-server/gRpc/domain/stub";
+//protoc -I gRpc/domain/ gRpc/domain/msg.proto --go_out=plugins=grpc:gRpc/domain
+
+message TxtMessage {
+  string txt = 1;
+}
+
+service TxtMessageService {
+  rpc SayHello(TxtMessage) returns (TxtMessage) {}
+}

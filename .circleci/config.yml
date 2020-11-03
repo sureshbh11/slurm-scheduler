@@ -1,0 +1,305 @@
+version: 2.1
+
+commands:
+  containerize:
+    description: "Build and publish a container"
+    parameters:
+      dockerfile:
+        type: string
+        default: Dockerfile
+      workspace:
+        type: string
+        default: ~/project
+      flags:
+        type: string
+        default: ""
+    steps:
+      - attach_workspace:
+          at: << parameters.workspace >>
+      - setup_remote_docker
+      - run:
+          name: "Build and publish << parameters.dockerfile >>"
+          command: "containerize.sh -d << parameters.dockerfile >> << parameters.flags >> -p"
+
+executors:
+  containerize:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/containerize:v1.2.3
+  go-build:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/go-build:v0.1.5
+        environment:
+          GO111MODULE: "on"
+
+workflows:
+  secret-scanning:
+    jobs:
+      - secret-scanning:
+          # for AWS creds to download image
+          context: ecr-6644
+
+  build_docker_image:
+    jobs:
+      - checkout-workspace:
+          context: ecr-6644
+          filters:
+            tags:
+              only: /.*/
+      - copyright-check:
+          requires:
+            - checkout-workspace
+          context: ecr-6644  # This step uses a private container image
+      - go-vendor:
+          requires:
+            - checkout-workspace
+          context: ecr-6644
+      - go-lint:
+          requires:
+            - go-vendor
+          context: ecr-6644
+      - unit-test:
+          requires:
+            - go-vendor
+          context: ecr-6644
+      # - code-quality-and-coverage:
+      #     requires:
+      #       - unit-test
+      #     context: ecr-6644
+      - build:
+          requires:
+            - checkout-workspace
+          context: ecr-6644
+          filters:
+            tags:
+              only: /.*/
+      - circle_to_docker:
+          requires:
+            - checkout-workspace
+          context: ecr-6644
+          filters:
+            tags:
+              only: /.*/
+      - generate:
+          requires:
+            - checkout-workspace
+          context: ecr-6644
+          filters:
+            tags:
+              only: /.*/
+      - helm-lint:
+          context: ecr-6644
+          requires:
+            - checkout-workspace
+          filters:
+            tags:
+              only: /.*/
+      - generate-yaml-files:
+          requires:
+            - checkout-workspace
+          context: ecr-6644
+      - lint:
+          requires:
+            - generate-yaml-files
+          context: ecr-6644
+      - yamllint:
+          requires:
+            - generate-yaml-files
+          context: ecr-6644
+
+jobs:
+  secret-scanning:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/secrets-scanner:v0.3.3
+
+    working_directory: /src
+
+    steps:
+        # also injects host key
+      - checkout
+
+      - run:
+          name: Check for secrets leaked
+          command: scanner
+
+  checkout-workspace:
+    docker:
+      - image: 657273346644.dkr.ecr.us-west-2.amazonaws.com/mirror/cimg/base:2020.10
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: ~/project
+          paths: ['.']
+
+  copyright-check:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/copyright-tool:0.3.0
+
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Check copyright
+          command: |
+            copyright-tool
+
+  build:
+    executor: containerize
+    steps:
+      - containerize:
+          dockerfile: Dockerfile
+          flags: -s
+
+  generate:
+    executor: containerize
+    steps:
+      - containerize:
+          dockerfile: Dockerfile.generate
+
+  helm-lint:
+    docker:
+      - image: 657273346644.dkr.ecr.us-west-2.amazonaws.com/mirror/alpine/helm:3.3.4
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: "helm lint"
+          command: "helm lint $(ls -d helm/*/)"
+
+  go-vendor:
+    executor: go-build
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          background: true
+          name: "Diagnostics"
+          command: resource_diagnostics.sh
+      - run:
+          name: vendor
+          command: |
+            # If your project has private dependencies:
+            git config --global url.https://$GITHUB_TOKEN@github.com/.insteadOf https://github.com/
+            make vendor
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - vendor
+            - go.mod
+            - go.sum
+      - save_cache:
+          key: gopkg-v1-{{ checksum "go.mod" }}-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg
+  go-lint:
+    executor: go-build
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          background: true
+          name: "Diagnostics"
+          command: resource_diagnostics.sh
+      - restore_cache:
+          key: gopkg-v1-{{ checksum "go.mod" }}-{{ checksum "go.sum" }}
+      - run:
+          name: go-lint
+          command: |
+            make lint
+
+  unit-test:
+    executor: go-build
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          background: true
+          name: "Diagnostics"
+          command: resource_diagnostics.sh
+      - restore_cache:
+          key: gopkg-v1-{{ checksum "go.mod" }}-{{ checksum "go.sum" }}
+      - run:
+          name: run tests
+          # whatever commands you use to run your unit tests
+          command: |
+            #make test  # Redundant?
+            make coverage
+
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+
+      - store_test_results:
+          path: test-reports
+
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - coverage/
+
+  code-quality-and-coverage:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/sonar-scanner:v0.2.4
+
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Run sonar-scanner
+          command: |
+            sonar-scanner
+
+  generate-yaml-files:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/helm-template-generator:v3.2.6
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: "generate test yaml files for yamllint"
+          environment:
+            NS: go-service-template
+          command: |
+            mkdir -p values
+            touch values/go-service-template.yaml
+            echo "logLevel: info" > values/go-service-template.yaml
+            generate test
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - test/
+  lint:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/cluster-gen:v2.8.3
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: "github comment"
+          command: |
+            github-comment.sh test
+      - run:
+          name: "lint generated yaml files"
+          command: |
+            cluster-gen lint -d test
+
+  yamllint:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/yamllint:v0.1.0
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: yamllint
+          command: |
+            yamllint -c .yamllint.yml test
+  circle_to_docker:
+    docker:
+      - image: 657273346644.dkr.ecr.us-east-1.amazonaws.com/hpe-hcss/circleci-dependabot:v1.0.7
+    steps:
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Generate Dockerfile.circleci
+          command: |
+            circle-to-docker.sh

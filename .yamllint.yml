@@ -1,0 +1,11 @@
+# (c) Copyright 2020 Hewlett Packard Enterprise Development LP
+
+extends: default
+rules:
+  line-length: disable
+  new-line-at-end-of-file: disable
+  document-start: disable
+  trailing-spaces: disable
+  # We are fine with having a space buffer between braces and their content.
+  braces:
+    max-spaces-inside: 1

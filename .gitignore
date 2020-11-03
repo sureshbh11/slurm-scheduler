@@ -1,0 +1,19 @@
+bin/*
+!bin/generate
+.vscode
+coverage/*
+*.test
+
+#sonarqube
+.scannerwork/
+
+/build/
+
+.glide/
+vendor/
+.*.swp
+.idea/
+
+# Track changes to generated swagger file
+docs/.swagger-changed
+debug

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scm-config
+  labels:
+    app: {{ template "name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  scmClientConfig.yaml: |-
+    client:
+      serviceName: {{ .Values.scm.client.servicename }}
+      serviceSpace: {{ .Values.scm.client.servicespace }}
+    aws:
+      secrets:
+        namespace: {{ .Values.scm.namespace }}
+    hpe:
+      identity:
+        url: {{ .Values.scm.iamurl }}
+      scm:
+        url: {{ .Values.scm.scmurl }}

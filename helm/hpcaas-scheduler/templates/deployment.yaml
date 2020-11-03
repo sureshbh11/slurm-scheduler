@@ -1,0 +1,84 @@
+# (C) Copyright 2019 Hewlett Packard Enterprise Development LP
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "name" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/support/metrics"
+        prometheus.io/port: {{ .Values.service.metricsPort | quote }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ template "name" . }}
+                topologyKey: failure-domain.beta.kubernetes.io/zone
+      containers:
+        - name: {{ template "name" . }}
+          {{- if .Values.image.registry }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- else }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.internalPort }}
+            - containerPort: {{ .Values.service.metricsPort }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.service.healthPath }}
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.service.readiness.initialDelay }}
+            periodSeconds: {{ .Values.service.readiness.period }}
+            failureThreshold: {{ .Values.service.readiness.threshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.service.healthPath }}
+              port: {{ .Values.service.internalPort }}
+            initialDelaySeconds: {{ .Values.service.liveness.initialDelay }}
+            periodSeconds: {{ .Values.service.liveness.period }}
+            failureThreshold: {{ .Values.service.liveness.threshold }}
+          envFrom:
+            - configMapRef:
+                name: {{ template "name" . }}-config
+          env:
+            - name: SCM_AWS_ACCESS_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.scm.secretname | quote }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: SCM_AWS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.scm.secretname | quote }}
+                  key: AWS_SECRET_ACCESS_KEY
+          volumeMounts:
+            - name: scm-config-volume
+              mountPath: /opt/hpcaas-job-scheduler
+      volumes:
+        - name: scm-config-volume
+          configMap:
+            name: scm-config

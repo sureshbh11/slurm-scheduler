@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    prometheus: k8s
+    role: alert-rules
+  name: go-service-template
+spec:
+  groups:
+    - name: go-service-template
+      rules:
+        - alert: go_service_template_info
+          labels:
+            severity: info
+          annotations:
+            message: A demonstration alert for the go-service-template
+            runbook_url: https://github.com/hpe-hcss/go-service-template
+          expr: go_service_template_default{namespace="{{ .Release.Namespace }}"} > 0
+        - alert: go_service_template_critical
+          labels:
+            severity: critical
+          annotations:
+            message: A critical demonstration alert for the go-service-template
+            runbook_url: https://github.com/hpe-hcss/go-service-template
+          expr: go_service_template_critical{namespace="{{ .Release.Namespace }}"} > 0
